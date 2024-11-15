@@ -16,35 +16,85 @@ func main() {
 	r := regexp.MustCompile("(?s)^WORDS:(.*)\n\n(.*)\n$")
 	matches := r.FindSubmatch(input)
 	words := bytes.Split(matches[1], []byte{','})
-	wordMap := make(map[string]bool)
-	for _, word := range words {
-		rev := make([]byte, len(word))
-		for i, c := range word {
-			rev[len(rev)-1-i] = c
-		}
-		wordMap[string(word)] = true
-		wordMap[string(rev)] = true
-	}
-
 	lines := bytes.Split(matches[2], []byte{'\n'})
 
-	count := 0
-	for _, line := range lines {
-		next := 0
-		for i := range line {
-			for word := range wordMap {
-				if i+len(word) > len(line) {
-					continue
+	isRune := make([][]bool, len(lines))
+	for i := range isRune {
+		isRune[i] = make([]bool, len(lines[0]))
+	}
+	for y, line := range lines {
+		for x := range line {
+			for _, word := range words {
+				poss := make([]byte, len(word))
+				// right
+				{
+					for i := range poss {
+						off := wrapMod(x+i, len(line))
+						poss[i] = lines[y][off]
+					}
+					if bytes.Equal(word, poss) {
+						for i := range poss {
+							off := wrapMod(x+i, len(line))
+							isRune[y][off] = true
+						}
+					}
 				}
-				poss := line[i : i+len(word)]
-				if word == string(poss) {
-					overlap := max(0, next-i)
-					count += max(0, len(word)-overlap)
-
-					next = max(next, i+len(word))
+				// left
+				{
+					for i := range poss {
+						off := wrapMod(x-i, len(line))
+						poss[i] = lines[y][off]
+					}
+					if bytes.Equal(word, poss) {
+						for i := range poss {
+							off := wrapMod(x-i, len(line))
+							isRune[y][off] = true
+						}
+					}
+				}
+				// down
+				if y+len(poss)-1 < len(lines) {
+					for i := range poss {
+						off := y + i
+						poss[i] = lines[off][x]
+					}
+					if bytes.Equal(word, poss) {
+						for i := range poss {
+							off := y + i
+							isRune[off][x] = true
+						}
+					}
+				}
+				// up
+				if y-len(poss)+1 >= 0 {
+					for i := range poss {
+						off := y - i
+						poss[i] = lines[off][x]
+					}
+					if bytes.Equal(word, poss) {
+						for i := range poss {
+							off := y - i
+							isRune[off][x] = true
+						}
+					}
 				}
 			}
 		}
 	}
+	count := 0
+	for y := range isRune {
+		for x := range isRune[y] {
+			if isRune[y][x] {
+				count++
+			}
+		}
+	}
 	fmt.Println(count)
+}
+
+func wrapMod(x, n int) int {
+	r := x % n // if x <= 0, then -n < r <= 0
+	r += n
+	r %= n
+	return r
 }
