@@ -12,6 +12,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	input = bytes.TrimRight(input, "\n")
 
 	lines := bytes.Split(input, []byte{'\n'})
 
@@ -31,23 +32,28 @@ func step(lines [][]byte) (int, [][]byte) {
 
 	count := 0
 	for y, line := range lines {
+	blockLoop:
 		for x, block := range line {
 			next[y][x] = block //default value
 			if block == '.' {
 				continue
 			}
-			if !sideOkay(x, y-1, block, lines) {
-				continue
+			adjacentBlocks := [][]int{
+				{x, y - 1},
+				{x, y + 1},
+				{x - 1, y},
+				{x + 1, y},
+				{x - 1, y - 1},
+				{x + 1, y + 1},
+				{x - 1, y + 1},
+				{x + 1, y - 1},
 			}
-			if !sideOkay(x, y+1, block, lines) {
-				continue
+			for _, adj := range adjacentBlocks {
+				if !sideOkay(adj[0], adj[1], block, lines) {
+					continue blockLoop
+				}
 			}
-			if !sideOkay(x-1, y, block, lines) {
-				continue
-			}
-			if !sideOkay(x+1, y, block, lines) {
-				continue
-			}
+
 			if block+1 == 0 {
 				panic("too deep: overflow!")
 			}
@@ -65,10 +71,10 @@ func step(lines [][]byte) (int, [][]byte) {
 
 func sideOkay(x, y int, block byte, lines [][]byte) bool {
 	if y < 0 || y >= len(lines) {
-		return true
+		return block == '#'
 	}
 	if x < 0 || x >= len(lines[0]) {
-		return true
+		return block == '#'
 	}
 	if lines[y][x] == '.' {
 		return block == '#'
