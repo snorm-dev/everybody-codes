@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -29,7 +30,8 @@ func main() {
 		}
 	}
 
-	counts := make(map[int]int)
+	seen := make(map[string]bool)
+	maxFront := ""
 
 	for i := 0; ; i++ {
 		col := i % len(columns)
@@ -39,18 +41,27 @@ func main() {
 		nextCol := (i + 1) % len(columns)
 		columns[nextCol] = round(clapper, columns[nextCol])
 
-		front := 0
+		front := strings.Builder{}
 		for _, column := range columns {
-			for c := column[0]; c > 0; c /= 10 {
-				front *= 10
-			}
-			front += column[0]
+			front.WriteString(strconv.Itoa(column[0]))
 		}
-		counts[front]++
-		if counts[front] == 2024 {
-			fmt.Println((i + 1) * front)
+		maxFront = max(maxFront, front.String())
+
+		sb := strings.Builder{}
+		for _, column := range columns {
+			for _, person := range column {
+				sb.WriteString(strconv.Itoa(person))
+				sb.WriteByte(';')
+			}
+			sb.WriteByte('|')
+		}
+		snapshot := sb.String()
+
+		if seen[snapshot] {
+			fmt.Println(maxFront)
 			return
 		}
+		seen[snapshot] = true
 	}
 }
 
@@ -60,18 +71,7 @@ func round(clapper int, line []int) []int {
 }
 
 func absorptionIndex(clapper, length int) int {
-	// examples
-	// assume they run back around ad infinitum
-	// 1 4 -> 0
-	// 2 4 -> 1
-	// 3 4 -> 2
-	// 4 4 -> 3
-	// 5 4 -> 4 = 2n + 1 - c
-	// 6 4 -> 3
-	// 7 4 -> 2
-	// 8 4 -> 1
-	// 9 4 -> 0 // same as 1
-	clapper = clapper % (2 * length)
+	clapper = 1 + (clapper-1)%(2*length)
 
 	if clapper > length {
 		return 2*length + 1 - clapper
