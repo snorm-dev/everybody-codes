@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"math"
 	"os"
+	"slices"
 	"strconv"
 )
 
@@ -26,14 +26,17 @@ func main() {
 		}
 	}
 
-	minHeight := math.MaxInt
-	for _, height := range heights {
-		minHeight = min(minHeight, height)
-	}
+	slices.Sort(heights)
+
+	median := heights[len(heights)/2]
 
 	count := 0
 	for _, height := range heights {
-		count += height - minHeight
+		diff := height - median
+		if diff < 0 {
+			diff *= -1
+		}
+		count += diff
 	}
 	fmt.Println(count)
 }
