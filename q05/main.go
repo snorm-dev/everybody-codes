@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"slices"
+	"strconv"
 )
 
 func main() {
@@ -16,17 +17,21 @@ func main() {
 	input = bytes.TrimRight(input, "\n")
 	lines := bytes.Split(input, []byte{'\n'})
 
-	columns := make([][]int, (len(lines[0])+1)/2)
+	columns := make([][]int, bytes.Count(lines[0], []byte{' '})+1)
 	for _, line := range lines {
-		for i, c := range line {
-			if c == ' ' {
-				continue
+		nums := bytes.Split(line, []byte{' '})
+		for i, s := range nums {
+			n, err := strconv.Atoi(string(s))
+			if err != nil {
+				log.Fatal("bad input")
 			}
-			columns[i/2] = append(columns[i/2], int(c-'0'))
+			columns[i] = append(columns[i], n)
 		}
 	}
 
-	for i := range 10 {
+	counts := make(map[int]int)
+
+	for i := 0; ; i++ {
 		col := i % len(columns)
 		clapper := columns[col][0]
 		columns[col] = columns[col][1:]
@@ -34,10 +39,18 @@ func main() {
 		nextCol := (i + 1) % len(columns)
 		columns[nextCol] = round(clapper, columns[nextCol])
 
+		front := 0
 		for _, column := range columns {
-			fmt.Print(column[0])
+			for c := column[0]; c > 0; c /= 10 {
+				front *= 10
+			}
+			front += column[0]
 		}
-		fmt.Println()
+		counts[front]++
+		if counts[front] == 2024 {
+			fmt.Println((i + 1) * front)
+			return
+		}
 	}
 }
 
